@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mobile Development Quiz{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #c87f0a 0%, #8a5800 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+    .quiz-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+            /*color: #f39c12;*/
+
+    .quiz-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .quiz-header h1 {
+        color: #333;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .quiz-header p {
+        color: #666;
+        font-size: 1.1rem;
+    }
+    
+    .question-container {
+        margin-bottom: 2rem;
+        display: grid;
+        color: #2c3e50;
+        background: rgba(255, 255, 255, 0.9);
+        font-family: 'Poppins', sans-serif;
+        line-height: 1.6;
+        grid-gap: 1rem;    }
+    
+    .question {
+        font-size: 1.3rem;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+        color: #333;
+    }
+    
+    .options {
+        display: grid;
+        grid-gap: 1rem;
+    }
+    
+    .option {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .option:hover {
+        background-color: #e9ecef;
+    }
+    
+    .option.selected {
+        background-color: #4c6ef5;
+        color: black;
+        border-color: #2c3e50;
+    }
+    
+    .option.correct {
+        background-color: #40c057;
+        color: white;
+        border-color: #40c057;
+    }
+    
+    .option.incorrect {
+        background-color: #fa5252;
+        color: white;
+        border-color: #fa5252;
+    }
+    
+    .controls {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 5px;
+        background-color: #4c6ef5;
+        color: white;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    
+    .btn:hover {
+        background-color: #3b5bdb;
+    }
+    
+    .btn:disabled {
+        background-color: #adb5bd;
+        cursor: not-allowed;
+    }
+    
+    .results {
+        text-align: center;
+        margin-top: 2rem;
+    }
+    
+    .score {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #4c6ef5;
+        margin-bottom: 1rem;
+    }
+    
+    .message {
+        font-size: 1.2rem;
+        color: #495057;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>Mobile Development Quiz</h1>
+        </div>
+        
+        {% if questions %}
+        {% for question in questions %}
+        <div class="question-container" {% if not forloop.first %}style="display: none;"{% endif %}>
+            <p class="question">{{ question.question_text }}</p>
+            <div class="options">
+                {% for option in question.options %}
+                <div class="option">{{ option }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="controls">
+            <button id="prev-btn" class="btn" disabled>Previous</button>
+            <span id="progress">Question 1 of {{ questions|length }}</span>
+            <button id="next-btn" class="btn">Next</button>
+        </div>
+        
+        <div id="results" class="results" style="display: none;">
+            <h2>Quiz Completed!</h2>
+            <p class="score" id="score">Your score: 0/{{ questions|length }}</p>
+            <p class="message" id="result-message">Great job!</p>
+            <button id="restart-btn" class="btn">Restart Quiz</button>
+            <button id="home-btn" class="btn" onclick="location.href='{% url 'index' %}'">Back to Home</button>
+        </div>
+        {% else %}
+        <div class="question-container">
+            <p class="question">No questions available for this topic.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const questionContainers = document.querySelectorAll('.question-container');
+        const resultsDiv = document.querySelector('.results');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const progressText = document.getElementById('progress');
+        const scoreText = document.getElementById('score');
+        const resultMessage = document.getElementById('result-message');
+        const restartBtn = document.getElementById('restart-btn');
+        
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(questionContainers.length).fill(undefined);
+        let correctAnswers = [{% for question in questions %}{{ question.correct_answer_index }}{% if not forloop.last %},{% endif %}{% endfor %}];
+        
+        function showQuestion(index) {
+            questionContainers.forEach((container, i) => {
+                container.style.display = i === index ? 'block' : 'none';
+            });
+            
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = userAnswers[index] === undefined;
+            progressText.textContent = `Question ${index + 1} of ${questionContainers.length}`;
+        }
+        
+        function selectOption(questionIndex, optionIndex) {
+            const options = questionContainers[questionIndex].querySelectorAll('.option');
+            options.forEach((option, i) => {
+                if (i === optionIndex) {
+                    option.classList.add('selected');
+                } else {
+                    option.classList.remove('selected');
+                }
+            });
+            
+            userAnswers[questionIndex] = optionIndex;
+            nextBtn.disabled = false;
+        }
+        
+        function showResults() {
+            const correctCount = userAnswers.reduce((total, answer, index) => {
+                return total + (answer === correctAnswers[index] ? 1 : 0);
+            }, 0);
+            
+            const score = Math.round((correctCount / questionContainers.length) * 100);
+            scoreText.textContent = `Your score: ${correctCount}/${questionContainers.length} (${score}%)`;
+            
+            if (score >= 90) {
+                resultMessage.textContent = "Outstanding! You're a mobile development expert!";
+            } else if (score >= 70) {
+                resultMessage.textContent = "Great job! You have solid mobile development knowledge!";
+            } else if (score >= 50) {
+                resultMessage.textContent = "Good effort! Keep learning and practicing!";
+            } else {
+                resultMessage.textContent = "Keep studying! You'll improve with practice!";
+            }
+            
+            questionContainers.forEach(container => container.style.display = 'none');
+            resultsDiv.style.display = 'block';
+        }
+        
+        // Add click event listeners to options
+        questionContainers.forEach((container, questionIndex) => {
+            const options = container.querySelectorAll('.option');
+            options.forEach((option, optionIndex) => {
+                option.addEventListener('click', () => selectOption(questionIndex, optionIndex));
+            });
+        });
+        
+        prevBtn.addEventListener('click', () => {
+            currentQuestionIndex--;
+            showQuestion(currentQuestionIndex);
+        });
+        
+        nextBtn.addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questionContainers.length) {
+                showQuestion(currentQuestionIndex);
+            } else {
+                showResults();
+            }
+        });
+        
+        restartBtn.addEventListener('click', () => {
+            currentQuestionIndex = 0;
+            userAnswers = new Array(questionContainers.length).fill(undefined);
+            questionContainers.forEach(container => {
+                container.querySelectorAll('.option').forEach(option => {
+                    option.classList.remove('selected');
+                });
+            });
+            showQuestion(currentQuestionIndex);
+            resultsDiv.style.display = 'none';
+        });
+        
+        // Initialize first question
+        if (questionContainers.length > 0) {
+            showQuestion(0);
+        }
+    });
+</script>
+{% endblock %} 

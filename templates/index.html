@@ -1,0 +1,44 @@
+ {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tech Quiz - Home{% endblock %}
+
+{% block content %}
+<div class="container">
+
+
+    <div class="quiz-categories">
+        <div class="category-card" onclick="location.href='{% url 'ai_quiz' %}'">
+        <div class="category-icon ai-icon">
+            <i class="fas fa-brain"></i>
+        </div>
+            <h2>Artificial Intelligence</h2>
+            <p>Test your knowledge about AI, machine learning, and neural networks</p>
+        </div>
+
+        <div class="category-card" onclick="location.href='{% url 'cyber_quiz' %}'">
+        <div class="category-icon cyber-icon">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+            <h2>Cyber Security</h2>
+            <p>Challenge yourself with questions about security, encryption, and threats</p>
+        </div>
+
+        <div class="category-card" onclick="location.href='{% url 'backend_quiz' %}'">
+        <div class="category-icon backend-icon">
+            <i class="fas fa-server"></i>
+        </div>
+            <h2>Backend Development</h2>
+            <p>Test your backend development skills with questions about APIs, databases, and servers</p>
+        </div>
+
+        <div class="category-card" onclick="location.href='{% url 'mobile_quiz' %}'">
+        <div class="category-icon mobile-icon">
+            <i class="fas fa-mobile-alt"></i>
+        </div>
+            <h2>Mobile Development</h2>
+            <p>Challenge your knowledge about mobile app development, frameworks, and best practices</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
